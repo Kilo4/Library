@@ -1,6 +1,7 @@
 namespace Webapi.Storage;
 
-public class IKeyValueStorage
+public interface IKeyValueStorage
 {
-    
+    int GetValue(string key);
+    int SetValue(string key, int inputValue);
 }

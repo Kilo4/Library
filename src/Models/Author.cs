@@ -1,4 +1,4 @@
-namespace Library.Models;
+namespace Webapi.Models;
 
 public class Author
 {

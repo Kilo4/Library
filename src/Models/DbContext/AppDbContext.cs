@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Webapi.Models;
 
-namespace Library.Models.DbContext;
+namespace Webapi.Models.DbContext;
 
 public class AppDbContext : Microsoft.EntityFrameworkCore.DbContext
 {
@@ -9,6 +10,7 @@ public class AppDbContext : Microsoft.EntityFrameworkCore.DbContext
         : base(options)
     {
     }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,6 +30,9 @@ public class AppDbContext : Microsoft.EntityFrameworkCore.DbContext
         //     .HasIndex(b => new { b.Author, b.Title })
         //     .IsUnique();
     }
-    // public DbSet<Book> Books { get; set; } = null!;
-    // public DbSet<Order> Orders { get; set; } = null!;
+    public DbSet<Article> Article { get; set; } = null!;
+    public DbSet<Author> Author { get; set; } = null!;
+    public DbSet<Image> Image { get; set; } = null!;
+    public DbSet<Site> Site { get; set; } = null!;
+    
 }

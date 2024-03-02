@@ -2,17 +2,17 @@ version: '3'
 
 services:    
   webapi:
-    image: library:latest
+    image: webapi:latest
     build:
       context: .
-      dockerfile: Dockerfile  # Adjust the path if your Dockerfile is in a different location
+      dockerfile: ../src/Dockerfile
     ports:
-      - "8000:80"
+      - "8000:8000"
     depends_on:
       - rabbitmq
       - postgres
-#    environment:
-#      - ASPNETCORE_ENVIRONMENT=Production
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
       # Add any additional environment variables required for your Web API
 
   rabbitmq:
@@ -27,7 +27,7 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
 
   postgres:
-    container_name: postgresql-library
+    container_name: postgresql-db
     image: postgres:16
     ports:
       - '5432:5432'
@@ -35,6 +35,11 @@ services:
       - docker-postgres-db.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   rabbitmq_data:
