@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Caching;
 using Microsoft.Extensions.Caching.Memory;
+using Webapi.Services;
+using Webapi.Types.Constant;
 
 
 namespace Webapi.Storage;
@@ -26,65 +28,33 @@ public class KeyValueStorage(IMemoryCache memoryCache): IKeyValueStorage
         return int.Parse(key);
     }
 
-    public int GetValue(string key)
+    public decimal? GetValue(string key)
     {
-        var currentDateTime = DateTime.Now;
-        if (!memoryCache.TryGetValue(key, out DateTime cacheValue))
-        {
-            if (DateTimeOffset.Now - cacheValue > TimeSpan.FromSeconds(15))
-            {
-                memoryCache.Set(key, 2);
-                return 2;
-            }
-
-            memoryCache.TryGetValue(key, out int value);
-            return value;
-        }
-        memoryCache.Set(key, 2);
-        return 2;
-        
-        // // Key not found, create it and set value to 2
-        // memoryCache.Set(key, 2, new MemoryCacheEntryOptions
-        // {
-        //     AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(15)
-        // });
-        //
-        // return 2;
+        var exists = memoryCache.TryGetValue(key, out CacheItem? cacheItem);
+        if (!exists || cacheItem == null)
+            return null;
+            
+        var result = DateTime.Now - cacheItem.timestamp;
+        if (result.Seconds > Constants.MaxSecondsOldCacheEntry)
+            return null;
+            
+        return cacheItem.value;
     }
 
-    public void SetValue(string key, int inputValue)
+    public void SetValue(string key, decimal value)
     {
-        if (memoryCache.TryGetValue(key, out int previousValue))
-        {
-            if (DateTimeOffset.Now - memoryCache > TimeSpan.FromSeconds(15))
-            {
-                // If the key exists and is older than 15 seconds, set value to 2
-                memoryCache.Set(key, 2);
-            }
-            else
-            {
-                // Otherwise, calculate and store the new value
-                double computedValue = Math.Pow(Math.E, Math.Log(inputValue) / memoryCache.Get<int>(key));
-                memoryCache.Set(key, computedValue);
-            }
-        }
-        else
-        {
-            // Key not found, create it and set value to 2
-            memoryCache.Set(key, 2, new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(15)
-            });
-        }
-        
-        // Publish to RabbitMQ queue (pseudo code, replace with your actual RabbitMQ logic)
-        PublishToRabbitMQ(key, inputValue, previousValue);
+        memoryCache.Set<CacheItem>(key, new CacheItem(value, DateTime.Now));
     }
-
-    // Replace this with your actual RabbitMQ logic
-    private void PublishToRabbitMQ(string key, int inputValue, int previousValue)
+    
+    private class CacheItem
     {
-        // Pseudo code: Implement logic to publish to RabbitMQ
-        Console.WriteLine($"Published to RabbitMQ - Key: {key}, InputValue: {inputValue}, PreviousValue: {previousValue}");
+        public CacheItem(decimal value, DateTime timestamp)
+        {
+            this.value = value; 
+            this.timestamp = timestamp;
+        }
+
+        public decimal value { get; set; }
+        public DateTime timestamp { get; set; }
     }
 }

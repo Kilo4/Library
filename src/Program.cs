@@ -3,50 +3,65 @@ using Webapi.Models.DbContext;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Webapi;
+using Microsoft.OpenApi.Models;
+using System.Reflection;
+using RabbitMQ.Client;
+using Webapi.Helpers;
+using Webapi.Services;
+using Webapi.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddMemoryCache();
+// Add postgres
 var connectionString = builder.Configuration.GetConnectionString("Default");
+var rabbitMqConfig = builder.Configuration.GetSection("RabbitMQ");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+// AddScope
+builder.Services.AddScoped<ICalculationService, CalculationService>();
+// AddSingleton
+builder.Services.AddSingleton<ConnectionFactory>(_ => new ConnectionFactory() { Uri = new Uri(rabbitMqConfig.GetValue<string>("ConnectionStrings"))});
+builder.Services.AddSingleton<IRabbitMqHelper, RabbitMqHelper>();
+builder.Services.AddSingleton<IKeyValueStorage, KeyValueStorage>();
+builder.Services.AddHostedService(provider =>
+{
+    var service = new RabbitMqConsumerService(rabbitMqConfig);
+    return service;
+});
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddHostedService<RabbitMqConsumerService>();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Version = "v1",
+        Title = "Library API",
+        Description = "An ASP.NET Core Web API for managing ToDo items",
+        TermsOfService = new Uri("https://example.com/terms"),
+        License = new OpenApiLicense
+        {
+            Name = "Example License",
+            Url = new Uri("https://example.com/license")
+        }
+    });
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+});
+
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Run migration
+using (var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope())
+{
+    var dbContext = serviceScope.ServiceProvider.GetService<AppDbContext>();
+    dbContext.Database.Migrate();
+}
+
 app.UseSwagger();
 app.UseSwaggerUI();
-
-// app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
-
+app.MapDefaultControllerRoute();
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

@@ -14,25 +14,40 @@ public class AppDbContext : Microsoft.EntityFrameworkCore.DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // modelBuilder.Entity<Order>()
-        //     .Property(p => p.OrderDate)
-        //     .HasDefaultValueSql("CURRENT_TIMESTAMP");
-        // modelBuilder.Entity<Order>()
-        //     .Property(p => p.LastDate)
-        //     .HasDefaultValueSql("CURRENT_TIMESTAMP + INTERVAL '30 days'");
-        // modelBuilder.Entity<Order>()
-        //     .Property(b => b.Books)
-        //     .HasConversion(
-        //         v => JsonConvert.SerializeObject(v, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }),
-        //         v => JsonConvert.DeserializeObject<List<Book>>(v, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }));
-        //
-        // modelBuilder.Entity<Book>()
-        //     .HasIndex(b => new { b.Author, b.Title })
-        //     .IsUnique();
+        modelBuilder.Entity<Image>().HasKey(key => key.Id);
+        
+        modelBuilder.Entity<Site>().HasKey(key => key.Id);
+        modelBuilder.Entity<Site>().Property(p => p.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        
+        modelBuilder.Entity<Author>().HasKey(key => key.Id);
+        modelBuilder.Entity<Author>().HasIndex(p => p.Name).IsUnique();
+        modelBuilder.Entity<Author>().HasOne(a => a.Image)
+            .WithOne()
+            .HasForeignKey<Image>(a => a.Id)
+            .IsRequired(true);
+
+        modelBuilder.Entity<Article>().HasKey(key => key.Id);
+        modelBuilder.Entity<Article>().HasIndex(key => key.Title);
+        modelBuilder.Entity<Article>()
+            .HasOne(e => e.Site)
+            .WithMany()
+            .HasForeignKey("SiteId")
+            .HasPrincipalKey(nameof(Article.Id))
+            .IsRequired(true);
+        modelBuilder.Entity<Article>()
+            .HasMany(a => a.Author)
+            .WithMany()
+            .UsingEntity(
+                "ArticleAuthor",
+                l => l.HasOne(typeof(Author)).WithMany().HasForeignKey("ArticleId").HasPrincipalKey(nameof(Author.Id)),
+                r => r.HasOne(typeof(Article)).WithMany().HasForeignKey("AuthorId").HasPrincipalKey(nameof(Article.Id))
+                );
+        
+        base.OnModelCreating(modelBuilder);
     }
-    public DbSet<Article> Article { get; set; } = null!;
-    public DbSet<Author> Author { get; set; } = null!;
-    public DbSet<Image> Image { get; set; } = null!;
-    public DbSet<Site> Site { get; set; } = null!;
+    public DbSet<Article> Articles { get; set; } = null!;
+    public DbSet<Author> Authors { get; set; } = null!;
+    public DbSet<Image> Images { get; set; } = null!;
+    public DbSet<Site> Sites { get; set; } = null!;
     
 }

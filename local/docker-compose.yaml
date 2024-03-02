@@ -20,9 +20,8 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: your-rabbitmq-username
-      RABBITMQ_DEFAULT_PASS: your-rabbitmq-password
+    env_file:
+      - docker-RabbitMQ.env
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
