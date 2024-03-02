@@ -1,0 +1,41 @@
+version: '3'
+
+services:    
+  webapi:
+    image: library:latest
+    build:
+      context: .
+      dockerfile: Dockerfile  # Adjust the path if your Dockerfile is in a different location
+    ports:
+      - "8000:80"
+    depends_on:
+      - rabbitmq
+      - postgres
+#    environment:
+#      - ASPNETCORE_ENVIRONMENT=Production
+      # Add any additional environment variables required for your Web API
+
+  rabbitmq:
+    image: "rabbitmq:3.8-management"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: your-rabbitmq-username
+      RABBITMQ_DEFAULT_PASS: your-rabbitmq-password
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  postgres:
+    container_name: postgresql-library
+    image: postgres:16
+    ports:
+      - '5432:5432'
+    env_file:
+      - docker-postgres-db.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  rabbitmq_data:
+  postgres_data:
