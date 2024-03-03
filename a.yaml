@@ -1,0 +1,63 @@
+version: '3'
+
+networks:
+  mynetwork:
+    driver: bridge
+
+services:
+  webapi:
+    image: webapi:latest
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+    networks:
+      - mynetwork
+
+  rabbitmq:
+    container_name: RabbitMQ-1
+    image: "rabbitmq:3.8-management"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    env_file:
+      - docker-RMQ.env
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - mynetwork
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+  postgres:
+    container_name: postgresql-db-1
+    image: postgres:16
+    ports:
+      - '5432:5432'
+    env_file:
+      - docker-db.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mynetwork
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+volumes:
+  rabbitmq_data:
+  postgres_data:

@@ -17,6 +17,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddMemoryCache();
 // Add postgres
+var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+var config = builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json")
+    .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
+    .Build();
 var connectionString = builder.Configuration.GetConnectionString("Default");
 var rabbitMqConfig = builder.Configuration.GetSection("RabbitMQ");
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -57,4 +63,5 @@ using (var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>(
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapDefaultControllerRoute();
+// app.UseHttpsRedirection();
 app.Run();
