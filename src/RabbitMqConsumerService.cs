@@ -18,9 +18,8 @@ public class RabbitMqConsumerService : IHostedService
     private readonly IConnection _connection;
     private readonly IModel _channel;
 
-    public RabbitMqConsumerService(IConfigurationSection configuration)
+    public RabbitMqConsumerService(string uri)
     {
-        var uri = configuration.GetValue<string>("ConnectionStrings");
         var factory = new ConnectionFactory
         {
             Uri = new Uri(uri),

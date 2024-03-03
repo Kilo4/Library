@@ -24,13 +24,13 @@ var config = builder.Configuration
     .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
     .Build();
 var connectionString = builder.Configuration.GetConnectionString("Default");
-var rabbitMqConfig = builder.Configuration.GetSection("RabbitMQ");
+var rabbitMqConfig = builder.Configuration.GetSection("RabbitMQ").GetValue<string>("ConnectionStrings");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 // AddScope
 builder.Services.AddScoped<ICalculationService, CalculationService>();
 // AddSingleton
-builder.Services.AddSingleton<ConnectionFactory>(_ => new ConnectionFactory() { Uri = new Uri(rabbitMqConfig.GetValue<string>("ConnectionStrings"))});
+builder.Services.AddSingleton<ConnectionFactory>(_ => new ConnectionFactory() { Uri = new Uri(rabbitMqConfig)});
 builder.Services.AddSingleton<IRabbitMqHelper, RabbitMqHelper>();
 builder.Services.AddSingleton<IKeyValueStorage, KeyValueStorage>();
 builder.Services.AddHostedService(provider =>
