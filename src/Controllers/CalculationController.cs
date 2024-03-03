@@ -19,7 +19,7 @@ public class CalculationController(AppDbContext context, ICalculationService cal
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult> Calculation(int key, [FromBody] CalculationRequest request)
+    public async Task<ActionResult<CalculationResponse>> Calculation(int key, [FromBody] CalculationRequest request)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
